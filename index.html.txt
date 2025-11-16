@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alliwan Petty Cash Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: linear-gradient(135deg, #f9fafb 0%, #e5e7eb 100%);
+        }
+        .header-gradient {
+            background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%);
+        }
+        .category-raw { background-color: #27AE60; }
+        .category-smallware { background-color: #3498DB; }
+        .category-petrol { background-color: #E67E22; }
+        .category-stationery { background-color: #9B59B6; }
+        .category-misc { background-color: #E74C3C; }
+        .status-uploaded { color: #10B981; }
+        .status-pending { color: #F59E0B; }
+        .status-verified { color: #3B82F6; }
+        .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        .hover-scale { transition: transform 0.2s; }
+        .hover-scale:hover { transform: scale(1.02); }
+        .tab-active { border-bottom: 3px solid #3B82F6; background-color: #EBF4FF; }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .dark-mode { background: linear-gradient(135deg, #1f2937 0%, #111827 100%); color: white; }
+        .dark-mode .bg-white { background-color: #374151 !important; color: white; }
+        .dark-mode .text-gray-700 { color: #d1d5db !important; }
+        .dark-mode .border-gray-200 { border-color: #4b5563 !important; }
+        .print-section { page-break-inside: avoid; margin-bottom: 2rem; }
+        @media print { .no-print { display: none !important; } }
+        .drag-drop-zone {
+            border: 2px dashed #cbd5e0;
+            transition: all 0.3s ease;
+        }
+        .drag-drop-zone.dragover {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Header -->
+    <header class="header-gradient text-white p-6 shadow-lg">
+        <div class="container mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
+                    <i class="fas fa-hamburger text-blue-600 text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold">ALLIWAN PETTY CASH MANAGEMENT SYSTEM</h1>
+                    <p class="text-blue-100">Area Manager Dashboard - Real-time Expense Tracking</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4 no-print">
+                <button onclick="toggleDarkMode()" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg transition-colors">
+                    <i class="fas fa-moon"></i> Dark Mode
+                </button>
+                <button onclick="exportToExcel()" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg transition-colors">
+                    <i class="fas fa-file-excel"></i> Export Excel
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="bg-white border-b border-gray-200 sticky top-0 z-40 no-print">
+        <div class="container mx-auto">
+            <div class="flex overflow-x-auto">
+                <button class="tab-btn px-6 py-3 font-medium text-gray-600 hover:text-blue-600 whitespace-nowrap tab-active" onclick="showTab('dashboard')">
+                    <i class="fas fa-chart-dashboard mr-2"></i>Dashboard
+                </button>
+                <button class="tab-btn px-6 py-3 font-medium text-gray-600 hover:text-blue-600 whitespace-nowrap" onclick="showTab('all-stores')">
+                    <i class="fas fa-plus-circle mr-2"></i>All Stores Entry
+                </button>
+                <button class="tab-btn px-6 py-3 font-medium text-gray-600 hover:text-blue-600 whitespace-nowrap" onclick="showTab('Hamra')">
+                    <i class="fas fa-store mr-2"></i>Hamra
+                </button>
+                <button class="tab-btn px-6 py-3 font-medium text-gray-600 hover:text-blue-600 whitespace-nowrap" onclick="showTab('Jaber')">
+                    <i class="fas fa-store mr-2"></i>Jaber
+                </button>
+                <button class="tab-btn px-6 py-3 font-medium text-gray-600 hover:text-blue-600 whitespace-nowrap" onclick="showTab('Qurtuba')">
+                    <i class="fas fa-store mr-2"></i>Qurtuba
+                </button>
+                <button class="tab-btn px-6 py-3 font-medium text-gray-600 hover:text-blue-600 whitespace-nowrap" onclick="showTab('Nuzha')">
+                    <i class="fas fa-store mr-2"></i>Nuzha
+                </button>
+                <button class="tab-btn px-6 py-3 font-medium text-gray-600 hover:text-blue-600 whitespace-nowrap" onclick="showTab('Narjis')">
+                    <i class="fas fa-store mr-2"></i>Narjis
+                </button>
+                <button class="tab-btn px-6 py-3 font-medium text-gray-600 hover:text-blue-600 whitespace-nowrap" onclick="showTab('monthly-summary')">
+                    <i class="fas fa-chart-bar mr-2"></i>Monthly Summary
+                </button>
+                <button class="tab-btn px-6 py-3 font-medium text-gray-600 hover:text-blue-600 whitespace-nowrap" onclick="showTab('instructions')">
+                    <i class="fas fa-info-circle mr-2"></i>Instructions
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mx-auto p-6 space-y-6">
+        
+        <!-- Dashboard Tab -->
+        <div id="dashboard-tab" class="tab-content fade-in">
+            <div class="print-section">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Dashboard Overview</h2>
+                
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-lg card-shadow hover-scale border-l-4 border-blue-500">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-600 text-sm font-medium">Total Monthly Spend</p>
+                                <p class="text-3xl font-bold text-gray-800" id="total-spend">₹0</p>
+                            </div>
+                            <div class="bg-blue-100 p-3 rounded-full">
+                                <i class="fas fa-rupee-sign text-blue-600 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-lg card-shadow hover-scale border-l-4 border-green-500">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-600 text-sm font-medium">Total Transactions</p>
+                                <p class="text-3xl font-bold text-gray-800" id="total-transactions">0</p>
+                            </div>
+                            <div class="bg-green-100 p-3 rounded-full">
+                                <i class="fas fa-receipt text-green-600 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-lg card-shadow hover-scale border-l-4 border-yellow-500">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-600 text-sm font-medium">Pending Uploads</p>
+                                <p class="text-3xl font-bold text-gray-800" id="pending-uploads">0</p>
+                            </div>
+                            <div class="bg-yellow-100 p-3 rounded-full">
+                                <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-lg card-shadow hover-scale border-l-4 border-purple-500">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-600 text-sm font-medium">Active Stores</p>
+                                <p class="text-3xl font-bold text-gray-800">5</p>
+                            </div>
+                            <div class="bg-purple-100 p-3 rounded-full">
+                                <i class="fas fa-store text-purple-600 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-lg card-shadow">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4">Category-wise Distribution</h3>
+                        <div class="chart-container">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-lg card-shadow">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4">Store-wise Comparison</h3>
+                        <div class="chart-container">
+                            <canvas id="storeChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="bg-white p-6 rounded-lg card-shadow">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Recent Activity</h3>
+                    <div id="recent-activity" class="space-y-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- All Stores Data Entry Tab -->
+        <div id="all-stores-tab" class="tab-content hidden">
+            <div class="print-section">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">All Stores - Data Entry</h2>
+                
+                <!-- Data Entry Form -->
+                <div class="bg-white p-6 rounded-lg card-shadow mb-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Add New Expense Entry</h3>
+                    <form id="expense-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                            <input type="date" id="entry-date" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Store Name</label>
+                            <select id="store-name" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                                <option value="">Select Store</option>
+                                <option value="Hamra">Hamra</option>
+                                <option value="Jaber">Jaber</option>
+                                <option value="Qurtuba">Qurtuba</option>
+                                <option value="Nuzha">Nuzha</option>
+                                <option value="Narjis">Narjis</option>
+                            </select>
+                        </div>
+                                           
+<label
+
+class="block text-sm font-medium text-gray-700 mb-1">Restaurant Manager</label>
+
+<input
+
+type="text" id="manager-name" class="w-
+
+full p-2 border border-gray-300
+
+rounded-md bg-gray-50" readonly>
+
+</div>
+
+<div>
+
+<label
+
+class="block text-sm font-medium text-gray-700 mb-1">Expense Category</label>
+
+<select
+
+id="expense-category" class="w-full p-2 border border-gray-300 rounded-md
+
+focus:ring-2 focus:ring-blue-500
+
+focus: border-blue-500" required>
+
+<option
+
+value="">Select Category</option>
+
+<option
+
+value="Raw Material Purchase">Raw
+
+Material Purchase</option>
+
+<option
+
+value="Smallware Purchase">Smallware
+
+Purchase</option>
+
+<option
+
+value="Petrol">Petrol</option>
+ <option value="Office Stationery">Office Stationery</option>
+                                <option value="Miscellaneous">Miscellaneous</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Invoice Number</label>
+                            <input type="text" id="invoice-number" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="INV-XXX-2025" required>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Amount (₹)</label>
+<input type="number" id="amount" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="0.00" step="0.01" required>
+                        </div>
+                        
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <input type="text" id="description" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Brief description of expense" required>
+                        </div>
+                        
+                        <div>
+<label class="block text-sm font-medium text-gray-700 mb-1">Payment Mode</label>
+                            <select id="payment-mode" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                                <option value="">Select Mode</option>
+                                <option value="Cash">Cash</option>
+                                                                <option value="Card">Card</option>
+                                
+                            </select>
+                        </div>
+                        
+                        <div>
+<label class="block text-sm font-medium text-gray-700 mb-1">Invoice Status</label>
+                            <select id="invoice-status" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                                <option value="">Select Status</option>
+                                <option value="Pending Upload">Pending Upload</option>
+                                <option value="Uploaded">Uploaded</option>
+                                <option value="Verified">Verified</option>
+                            </select>
+                        </div>
+                        
+                        <div class="lg:col-span-3">
+<label class="block text-sm font-medium text-gray-700 mb-1">Invoice PDF Upload</label>
+                            <div class="drag-drop-zone border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-2"></i>
+                                <p class="text-gray-600">Drag and drop PDF file here or <button type="button" class="text-blue-600 hover:underline">browse</button></p>
+                                <p class="text-sm text-gray-500 mt-2">Or paste Google Drive/OneDrive link below:</p>
+                                <input type="url" id="invoice-link" class="w-full mt-2 p-2 border border-gray-300 rounded-md" placeholder="https://drive.google.com/...">
+</div>
+                        </div>
+                        
+                        <div class="lg:col-span-3 flex gap-4">
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors">
+                                <i class="fas fa-plus mr-2"></i>Add Entry
+                            </button>
+                            <button type="button" onclick="clearForm()" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-md transition-colors">
+                                <i class="fas fa-undo mr-2"></i>Clear Form
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Data Table -->
+<div class="bg-white p-6 rounded-lg card-shadow">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-semibold text-gray-800">All Expense Entries</h3>
+                        <div class="flex gap-2">
+                            <input type="text" id="search-input" class="p-2 border border-gray-300 rounded-md" placeholder="Search entries...">
+                            <select id="store-filter" class="p-2 border border-gray-300 rounded-md">
+                                <option value="">All Stores</option>
+                                <option value="Hamra">Hamra</option>
+                                <option value="Jaber">Jaber</option>
+<option value="Nuzha">Nuzha</option>
+                                <option value="Qurtuba">Qurtuba</option>
+                                <option value="Narjis">Narjis</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs uppercase bg-gray-50">
+<tr>
+                                    <th class="px-4 py-3">Date</th>
+                                    <th class="px-4 py-3">Store</th>
+                                    <th class="px-4 py-3">Manager</th>
+                                    <th class="px-4 py-3">Category</th>
+                                    <th class="px-4 py-3">Invoice #</th>
+                                    <th class="px-4 py-3">Amount</th>
+                                    <th class="px-4 py-3">Description</th>
+                                    <th class="px-4 py-3">Payment</th>
+                                    <th class="px-4 py-3">Status</th>
+                                    <th class="px-4 py-3">Invoice</th>
+                                    <th class="px-4 py-3 no-print">Actions</th>
+                                </tr>
+                            </thead>
+<tbody id="entries-table-body">
+                                <!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-4 p-4 bg-gray-50 rounded-md flex justify-between items-center">
+                        <span class="font-semibold text-gray-700">Total Entries: <span id="total-entries-count">0</span></span>
+                        <span class="font-semibold text-gray-700">Grand Total: ₹<span id="grand-total">0.00</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+<!-- Individual Store Tabs -->
+        <div id="Hamra-tab" class="tab-content hidden">
+            <div class="store-content" data-store="Hamra" data-manager="Ram Kumar"></div>
+        </div>
+        
+        <div id="Jaber-tab" class="tab-content hidden">
+            <div class="store-content" data-store="Jaber" data-manager="Abbas"></div>
+        </div>
+        
+        <div id="Nujha-tab" class="tab-content hidden">
+            <div class="store-content" data-store="Nujha" data-manager="Dilshad"></div>
+        </div>
+<div id="Qurtuba-tab" class="tab-content hidden">
+            <div class="store-content" data-store="Qurtuba" data-manager="Sandeep"></div>
+        </div>
+        
+        <div id="Narjis-tab" class="tab-content hidden">
+            <div class="store-content" data-store="Narjis" data-manager="Salman"></div>
+        </div>
+
+        <!-- Monthly Summary Tab -->
+        <div id="monthly-summary-tab" class="tab-content hidden">
+            <div class="print-section">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">Monthly Summary Report</h2>
+<!-- Month/Year Selector -->
+                <div class="bg-white p-6 rounded-lg card-shadow mb-6 no-print">
+                    <div class="flex items-center gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Month</label>
+                            <select id="summary-month" class="p-2 border border-gray-300 rounded-md">
+                                <option value="0">January</option>
+                                <option value="1">February</option>
+                                <option value="2">March</option>
+                                 <option value="3">April</option>
+                                <option value="4">May</option>
+                                <option value="5">June</option>
+                                <option value="6">July</option>
+                                <option value="7">August</option>
+                                <option value="8">September</option>
+                                <option value="9">October</option>
+                                <option value="10">November</option>
+                                   <option value="11">December</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                            <input type="number" id="summary-year" value="2025" min="2020" max="2030" class="p-2 border border-gray-300 rounded-md">
+                        </div>
+                        <div class="mt-6">
+                            <button onclick="generateMonthlySummary()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
+                                <i class="fas fa-chart-bar mr-2"></i>Generate Report
+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary Table -->
+                <div class="bg-white p-6 rounded-lg card-shadow mb-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Consolidated Monthly Report</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50">
+<th class="border border-gray-300 px-4 py-3 font-semibold">Store Name</th>
+                                    <th class="border border-gray-300 px-4 py-3 font-semibold">Raw Material</th>
+                                    <th class="border border-gray-300 px-4 py-3 font-semibold">Smallware</th>
+                                    <th class="border border-gray-300 px-4 py-3 font-semibold">Petrol</th>
+                                    <th class="border border-gray-300 px-4 py-3 font-semibold">Stationery</th>
+                                    <th class="border border-gray-300 px-4 py-3 font-semibold">Miscellaneous</th>
+                                    <th class="border border-gray-300 px-4 py-3 font-semibold">Total</th>
+<th class="border border-gray-300 px-4 py-3 font-semibold">Invoice Compliance</th>
+                                </tr>
+                            </thead>
+                            <tbody id="monthly-summary-body">
+<!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Finance Approval Section -->
+                <div class="bg-white p-6 rounded-lg card-shadow">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Finance Approval</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Area Manager Approval</label>
+<div class="border-2 border-dashed border-gray-300 p-4 text-center rounded-md">
+                                <p class="text-gray-500 mb-2">Digital Signature</p>
+                                <input type="text" placeholder="Area Manager Name" class="w-full p-2 border border-gray-300 rounded-md mb-2">
+                                <input type="date" class="w-full p-2 border border-gray-300 rounded-md">
+</div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Finance Manager Approval</label>
+                            <div class="border-2 border-dashed border-gray-300 p-4 text-center rounded-md">
+                                <p class="text-gray-500 mb-2">Digital Signature</p>
+                                <input type="text" placeholder="Finance Manager Name" class="w-full p-2 border border-gray-300 rounded-md mb-2">
+<input type="date" class="w-full p-2 border border-gray-300 rounded-md">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions Tab -->
+        <div id="instructions-tab" class="tab-content hidden">
+            <div class="print-section">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">User Instructions & Guidelines</h2>
+<div class="space-y-6">
+                    <!-- Quick Start Guide -->
+                    <div class="bg-white p-6 rounded-lg card-shadow">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-play-circle text-blue-600 mr-2"></i>Quick Start Guide
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="flex items-start space-x-3">
+                                <span class="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">1</span>
+<div>
+                                    <h4 class="font-semibold">Daily Data Entry</h4>
+                                    <p class="text-gray-600">Navigate to "All Stores Entry" tab and fill in all required fields for each expense.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <span class="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">2</span>
+<div>
+                                    <h4 class="font-semibold">Upload Invoice PDFs</h4>
+                                    <p class="text-gray-600">Scan invoices using your phone and upload to Google Drive/OneDrive. Paste the link in the system.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <span class="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">3</span>
+<div>
+                                    <h4 class="font-semibold">Review & Submit</h4>
+                                    <p class="text-gray-600">Check all entries for accuracy and ensure invoice status is "Uploaded" before month-end.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Expense Categories -->
+                    <div class="bg-white p-6 rounded-lg card-shadow">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-tags text-green-600 mr-2"></i>Expense Category Definitions
+                        </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="border-l-4 border-green-500 pl-4">
+                                <h4 class="font-semibold text-green-700">Raw Material Purchase</h4>
+                                <p class="text-sm text-gray-600">Fresh vegetables, meat, dairy, spices, condiments, packaging materials</p>
+                            </div>
+                            <div class="border-l-4 border-blue-500 pl-4">
+                                <h4 class="font-semibold text-blue-700">Smallware Purchase</h4>
+                                <p class="text-sm text-gray-600">Kitchen utensils, containers, cleaning supplies, uniforms, small equipment</p>
+                            </div>
+<div class="border-l-4 border-orange-500 pl-4">
+                                <h4 class="font-semibold text-orange-700">Petrol</h4>
+                                <p class="text-sm text-gray-600">Fuel for delivery vehicles, generator, emergency transportation</p>
+                            </div>
+                            <div class="border-l-4 border-purple-500 pl-4">
+                                <h4 class="font-semibold text-purple-700">Office Stationery</h4>
+                                <p class="text-sm text-gray-600">Papers, pens, files, printing, computer supplies, office equipment</p>
+</div>
+                            <div class="border-l-4 border-red-500 pl-4 md:col-span-2">
+                                <h4 class="font-semibold text-red-700">Miscellaneous</h4>
+                                <p class="text-sm text-gray-600">Equipment repairs, maintenance, licenses, permits, emergency expenses</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Data Validation Rules -->
+                    <div class="bg-white p-6 rounded-lg card-shadow">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-check-circle text-yellow-600 mr-2"></i>Data Validation Rules
+</h3>
+                        <ul class="space-y-2 text-gray-700">
+                            <li class="flex items-center space-x-2">
+                                <i class="fas fa-check text-green-500"></i>
+                                <span>All fields marked with (*) are mandatory</span>
+                            </li>
+                            <li class="flex items-center space-x-2">
+                                <i class="fas fa-check text-green-500"></i>
+                                <span>Invoice numbers must be unique (system will alert for duplicates)</span>
+</li>
+                            <li class="flex items-center space-x-2">
+                                <i class="fas fa-check text-green-500"></i>
+                                <span>Amount should be positive and in Saudi Riyal ⃁</span>
+                            </li>
+                            <li class="flex items-center space-x-2">
+                                <i class="fas fa-check text-green-500"></i>
+                                <span>Dates cannot be future dates</span>
+</li>
+                            <li class="flex items-center space-x-2">
+                                <i class="fas fa-check text-green-500"></i>
+                                <span>PDF invoices are mandatory for amounts above ⃁5,000</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Cloud Storage Setup -->
+                    <div class="bg-white p-6 rounded-lg card-shadow">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-cloud text-blue-600 mr-2"></i>Invoice PDF Upload Process
+</h3>
+                        <div class="space-y-4">
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <h4 class="font-semibold text-blue-800 mb-2">Step-by-Step Process:</h4>
+                                <ol class="list-decimal list-inside space-y-1 text-blue-700">
+                                    <li>Take clear photo/scan of invoice using phone camera</li>
+                                    <li>Upload to Google Drive or OneDrive</li>
+<li>Set file sharing permissions to "Anyone with link can view"</li>
+                                    <li>Copy the shareable link</li>
+                                    <li>Paste link in the "Invoice PDF Upload" field</li>
+                                    <li>Change invoice status to "Uploaded"</li>
+</ol>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact Information -->
+                    <div class="bg-white p-6 rounded-lg card-shadow">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-phone text-green-600 mr-2"></i>Support & Contact
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div>
+                                <h4 class="font-semibold">Technical Support</h4>
+                                <p class="text-gray-600">IT Help Desk: +91-XXXX-XXXXXX</p>
+                                <p class="text-gray-600">Email: anwar-operation@alliwan.com.sa</p>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold">Area Manager</h4>
+                                <p class="text-gray-600">Phone: +91-XXXX-XXXXXX</p>
+                                <p class="text-gray-600">Email: anwar-operation@alliwan.com.sa</p>
+</div>
+                        </div>
+                    </div>
+
+                    <!-- Keyboard Shortcuts -->
+                    <div class="bg-white p-6 rounded-lg card-shadow">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-keyboard text-purple-600 mr-2"></i>Keyboard Shortcuts
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="font-mono bg-gray-100 px-2 py-1 rounded">Ctrl + N</span>
+                                    <span>New Entry</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="font-mono bg-gray-100 px-2 py-1 rounded">Ctrl + S</span>
+                                    <span>Save Entry</span>
+</div>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="font-mono bg-gray-100 px-2 py-1 rounded">Ctrl + E</span>
+                                    <span>Export Excel</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="font-mono bg-gray-100 px-2 py-1 rounded">F1</span>
+                                    <span>Show Help</span>
+</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white p-6 mt-12 no-print">
+        <div class="container mx-auto text-center">
+            <p>&copy; 2025 QSR Management Systems. All rights reserved.</p>
+<p class="text-gray-400 text-sm mt-2">Version 1.0 - Last updated: January 2025</p>
+        </div>
+    </footer>
+
+    <script>
+        // Global variables
+        let expenseData = [];
+        let editingIndex = -1;
+        let isDarkMode = false;
+        
+        // Store managers mapping
+        const storeManagers = {
+            'Hamra': 'Ram Kumar',
+            'Jaber': 'Abbas',
+            'Nujha': 'Dilshad',
+            'Qurtuba': 'Sandeep',
+            'Narjis': 'Salman'
+        };
+// Category colors mapping
+        const categoryColors = {
+            'Raw Material Purchase': '#27AE60',
+            'Smallware Purchase': '#3498DB',
+            'Petrol': '#E67E22',
+            'Office Stationery': '#9B59B6',
+            'Miscellaneous': '#E74C3C'
+        };
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            initializeForm();
+            setupEventListeners();
+            generateStoreContent();
+            updateDashboard();
+            showTab('dashboard');
+            
+            // Set today's date as default
+            document.getElementById('entry-date').valueAsDate = new Date();
+            
+            // Auto-save every 30 seconds
+            setInterval(saveData, 30000);
+        });
+function loadData() {
+            const savedData = localStorage.getItem('qsr-petty-cash-data');
+            if (savedData) {
+                expenseData = JSON.parse(savedData);
+            } else {
+                expenseData = [...sampleData];
+                saveData();
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('Alliwan-petty-cash-data', JSON.stringify(expenseData));
+        }
+function initializeForm() {
+            // Manager name auto-fill based on store selection
+            document.getElementById('store-name').addEventListener('change', function() {
+                const selectedStore = this.value;
+                const managerField = document.getElementById('manager-name');
+                managerField.value = storeManagers[selectedStore] || '';
+            });
+
+            // Auto-generate invoice number
+            document.getElementById('store-name').addEventListener('change', generateInvoiceNumber);
+// Form validation
+            document.getElementById('expense-form').addEventListener('submit', handleFormSubmit);
+        }
+
+        function generateInvoiceNumber() {
+            const store = document.getElementById('store-name').value;
+            if (store) {
+                const count = expenseData.filter(item => item.store === store).length + 1;
+                const paddedCount = String(count).padStart(3, '0');
+                document.getElementById('invoice-number').value = INV-${paddedCount}-2025;
+            }
+        }
+function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            const formData = {
+                date: document.getElementById('entry-date').value,
+                store: document.getElementById('store-name').value,
+                manager: document.getElementById('manager-name').value,
+                category: document.getElementById('expense-category').value,
+                invoice: document.getElementById('invoice-number').value,
+                amount: parseFloat(document.getElementById('amount').value),
+                description: document.getElementById('description').value,
+status: document.getElementById('invoice-status').value,
+                invoiceLink: document.getElementById('invoice-link').value || ''
+            };
+
+            // Validation
+            if (!validateFormData(formData)) {
+                return;
+            }
+
+            if (editingIndex >= 0) {
+                expenseData[editingIndex] = formData;
+                editingIndex = -1;
+            } else {
+                expenseData.push(formData);
+            }
+saveData();
+            clearForm();
+            updateAllViews();
+            showNotification('Entry saved successfully!', 'success');
+        }
+
+        function validateFormData(data) {
+            // Check for duplicate invoice numbers
+            const duplicateIndex = expenseData.findIndex((item, index) => 
+                item.invoice === data.invoice && index !== editingIndex
+            );
+            
+            if (duplicateIndex >= 0) {
+                showNotification('Invoice number already exists!', 'error');
+                return false;
+            }
+// Check for future dates
+            if (new Date(data.date) > new Date()) {
+                showNotification('Date cannot be in the future!', 'error');
+                return false;
+            }
+
+            // Check for mandatory PDF for high amounts
+            if (data.amount > 5000 && !data.invoiceLink && data.status === 'Pending Upload') {
+                showNotification('PDF invoice is mandatory for amounts above ⃁5,000', 'warning');
+            }
+
+            return true;
+        }
+
+        function clearForm() 
+ {
+            document.getElementById('expense-form').reset();
+            document.getElementById('entry-date').valueAsDate = new Date();
+            document.getElementById('manager-name').value = '';
+            document.getElementById('invoice-link').value = '';
+            editingIndex = -1;
+        }
+
+        function setupEventListeners() {
+            // Search functionality
+            document.getElementById('search-input').addEventListener('input', filterEntries);
+document.getElementById('store-filter').addEventListener('change', filterEntries);
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey) {
+                    switch(e.key) {
+                        case 'n':
+                            e.preventDefault();
+                            showTab('all-stores');
+document.getElementById('entry-date').focus();
+                            break;
+                        case 's':
+                            e.preventDefault();
+                            if (document.getElementById('all-stores-tab').classList.contains('hidden') === false) {
+                                document.getElementById('expense-form').dispatchEvent(new Event('submit'));
+                            }
+                            break;
+                        case 'e':
+                            e.preventDefault();
+                            exportToExcel();
+break;
+                    }
+                }
+                if (e.key === 'F1') {
+                    e.preventDefault();
+                    showTab('instructions');
+                }
+            });
+
+            // Drag and drop for PDF upload
+            const dropZone = document.querySelector('.drag-drop-zone');
+            if (dropZone) {
+                dropZone.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    this.classList.add('dragover');
+                });
+                dropZone.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('dragover');
+                    // Simulate file upload
+                    showNotification('File uploaded! Please set invoice status to "Uploaded"', 'success');
+                });
+            }
+        }
+
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+// Remove active class from all tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('tab-active');
+            });
+            
+            // Show selected tab
+            const selectedTab = document.getElementById(tabName + '-tab');
+            if (selectedTab) {
+                selectedTab.classList.remove('hidden');
+            }
+            
+            // Add active class to clicked button
+            event.target.classList.add('tab-active');
+// Update views based on tab
+            if (tabName === 'dashboard') {
+                updateDashboard();
+            } else if (tabName === 'all-stores') {
+                renderEntriesTable();
+            } else if (tabName === 'monthly-summary') {
+                generateMonthlySummary();
+            }
+        }
+
+        function updateDashboard() {
+            // Calculate totals
+            const totalSpend = expenseData.reduce((sum, item) => sum + item.amount, 0);
+const totalTransactions = expenseData.length;
+            const pendingUploads = expenseData.filter(item => item.status === 'Pending Upload').length;
+            
+            // Update summary cards
+            document.getElementById('total-spend').textContent = ⃁${totalSpend.toLocaleString('en-IN')};
+            document.getElementById('total-transactions').textContent = totalTransactions;
+            document.getElementById('pending-uploads').textContent = pendingUploads;
+            
+            // Update charts
+            updateCategoryChart();
+            updateStoreChart();
+            updateRecentActivity();
+        }
+function updateCategoryChart() {
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            
+            // Calculate category totals
+            const categoryTotals = {};
+            expenseData.forEach(item => {
+                categoryTotals[item.category] = (categoryTotals[item.category] || 0) + item.amount;
+            });
+            
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(categoryTotals),
+                    datasets: [{
+                        data: Object.values(categoryTotals),
+backgroundColor: Object.keys(categoryTotals).map(cat => categoryColors[cat])
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateStoreChart() {
+            const ctx = document.getElementById('storeChart').getContext('2d');
+// Calculate store totals
+            const storeTotals = {};
+            expenseData.forEach(item => {
+                storeTotals[item.store] = (storeTotals[item.store] || 0) + item.amount;
+            });
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(storeTotals),
+                    datasets: [{
+                        label: 'Total Expenses (⃁)',
+                        data: Object.values(storeTotals),
+                        backgroundColor: '#3B82F6',
+                        borderColor: '#1E40AF',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '⃁' + value.toLocaleString('en-IN');
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+function updateRecentActivity() {
+            const recentEntries = expenseData.slice(-5).reverse();
+            const activityContainer = document.getElementById('recent-activity');
+            
+            activityContainer.innerHTML = recentEntries.map(entry => `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-3 h-3 rounded-full" style="background-color: ${categoryColors[entry.category]}"></div>
+<div>
+                            <p class="font-medium">${entry.store} - ${entry.category}</p>
+                            <p class="text-sm text-gray-600">${entry.description}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-semibold">⃁${entry.amount.toLocaleString('en-IN')}</p>
+                        <p class="text-sm ${entry.status === 'Uploaded' || entry.status === 'Verified' ? 'status-uploaded' : 'status-pending'}">${entry.status}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+function renderEntriesTable() {
+            const tableBody = document.getElementById('entries-table-body');
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const storeFilter = document.getElementById('store-filter').value;
+            
+            let filteredData = expenseData;
+            
+            if (searchTerm) {
+                filteredData = filteredData.filter(entry => 
+                    Object.values(entry).some(value => 
+                        value.toString().toLowerCase().includes(searchTerm)
+                    )
+                );
+            }
+if (storeFilter) {
+                filteredData = filteredData.filter(entry => entry.store === storeFilter);
+            }
+            
+            tableBody.innerHTML = filteredData.map((entry, index) => `
+                <tr class="border-b hover:bg-gray-50" style="border-left: 4px solid ${categoryColors[entry.category]}">
+                    <td class="px-4 py-3">${entry.date}</td>
+                    <td class="px-4 py-3">${entry.store}</td>
+                    <td class="px-4 py-3">${entry.manager}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 text-xs rounded-full text-white" style="background-color: ${categoryColors[entry.category]}">
+${entry.category}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 font-mono">${entry.invoice}</td>
+                    <td class="px-4 py-3 font-semibold">⃁${entry.amount.toLocaleString('en-IN')}</td>
+                    <td class="px-4 py-3">${entry.description}</td>
+                    <td class="px-4 py-3">${entry.payment}</td>
+                    <td class="px-4 py-3">
+                        <span class="text-sm font-medium ${getStatusClass(entry.status)}">${entry.status}</span>
+                    </td>
+                    <td class="px-4 py-3">
+                        ${entry.invoiceLink ?
+<a href="${entry.invoiceLink}" target="_blank" class="text-blue-600 hover:underline"><i class="fas fa-external-link-alt"></i> View</a> : 
+                            '<span class="text-gray-400">No file</span>'
+                        }
+                    </td>
+                    <td class="px-4 py-3 no-print">
+                        <div class="flex space-x-2">
+                            <button onclick="editEntry(${expenseData.indexOf(entry)})" class="text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteEntry(${expenseData.indexOf(entry)})" class="text-red-600 hover:text-red-800">
+<i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+            
+            // Update totals
+            document.getElementById('total-entries-count').textContent = filteredData.length;
+            document.getElementById('grand-total').textContent = 
+                filteredData.reduce((sum, entry) => sum + entry.amount, 0).toLocaleString('en-IN', {minimumFractionDigits: 2});
+        }
+function getStatusClass(status) {
+            switch(status) {
+                case 'Uploaded': case 'Verified': return 'status-uploaded';
+                case 'Pending Upload': return 'status-pending';
+                default: return '';
+            }
+        }
+
+        function editEntry(index) {
+            const entry = expenseData[index];
+            editingIndex = index;
+            
+            // Fill form with entry data
+            document.getElementById('entry-date').value = entry.date;
+            document.getElementById('store-name').value = entry.store;
+document.getElementById('manager-name').value = entry.manager;
+            document.getElementById('expense-category').value = entry.category;
+            document.getElementById('invoice-number').value = entry.invoice;
+            document.getElementById('amount').value = entry.amount;
+            document.getElementById('description').value = entry.description;
+            document.getElementById('payment-mode').value = entry.payment;
+            document.getElementById('invoice-status').value = entry.status;
+            document.getElementById('invoice-link').value = entry.invoiceLink;
+
+// Switch to form tab
+            showTab('all-stores');
+            
+            // Scroll to form
+            document.getElementById('expense-form').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function deleteEntry(index) {
+            if (confirm('Are you sure you want to delete this entry?')) {
+                expenseData.splice(index, 1);
+                saveData();
+                updateAllViews();
+                showNotification('Entry deleted successfully!', 'success');
+            }
+        }
+
+        function filterEntries() {
+            renderEntriesTable();
+        }
+function generateStoreContent() {
+            const storeContainers = document.querySelectorAll('.store-content');
+            
+            storeContainers.forEach(container => {
+                const storeName = container.dataset.store;
+                const managerName = container.dataset.manager;
+                
+                container.innerHTML = `
+                    <div class="print-section">
+                        <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-lg mb-6">
+                            <h2 class="text-3xl font-bold">${storeName}</h2>
+                            <p class="text-blue-100">Manager: ${managerName}</p>
+<div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="bg-white bg-opacity-20 p-4 rounded-lg">
+                                    <p class="text-sm">Monthly Total</p>
+                                    <p class="text-2xl font-bold" id="${storeName.replace(/\s+/g, '-').toLowerCase()}-total">₹0</p>
+                                </div>
+                                <div class="bg-white bg-opacity-20 p-4 rounded-lg">
+                                    <p class="text-sm">Transactions</p>
+                                    <p class="text-2xl font-bold" id="${storeName.replace(/\s+/g, '-').toLowerCase()}-count">0</p>
+                                </div>
+                                <div class="bg-white bg-opacity-20 p-4 rounded-lg">
+<p class="text-sm">Pending</p>
+                                    <p class="text-2xl font-bold" id="${storeName.replace(/\s+/g, '-').toLowerCase()}-pending">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white p-6 rounded-lg card-shadow mb-6">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-4">Quick Entry for ${storeName}</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                                    <input type="date" class="w-full p-2 border border-gray-300 rounded-md">
+</div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                                    <select class="w-full p-2 border border-gray-300 rounded-md">
+                                        <option value="">Select Category</option>
+                                        <option value="Raw Material Purchase">Raw Material Purchase</option>
+                                        <option value="Smallware Purchase">Smallware Purchase</option>
+                                        <option value="Petrol">Petrol</option>
+                                        <option value="Office Stationery">Office Stationery</option>
+                                        <option value="Miscellaneous">Miscellaneous</option>
+</select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Amount (₹)</label>
+                                    <input type="number" class="w-full p-2 border border-gray-300 rounded-md" placeholder="0.00">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                    <input type="text" class="w-full p-2 border border-gray-300 rounded-md" placeholder="Brief description">
+                                </div>
+                                <div class="md:col-span-2">
+<button class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors">
+                                        <i class="fas fa-plus mr-2"></i>Add Entry
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white p-6 rounded-lg card-shadow">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-4">${storeName} - Recent Entries</h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm text-left">
+                                    <thead class="text-xs uppercase bg-gray-50">
+<tr>
+                                            <th class="px-4 py-3">Date</th>
+                                            <th class="px-4 py-3">Category</th>
+                                            <th class="px-4 py-3">Amount</th>
+                                            <th class="px-4 py-3">Description</th>
+                                            <th class="px-4 py-3">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="${storeName.replace(/\s+/g, '-').toLowerCase()}-entries">
+                                        <!-- Dynamic content -->
+                                    </tbody>
+                                </table>
+</div>
+                        </div>
+                        
+                        <div class="bg-white p-6 rounded-lg card-shadow mt-6">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-4">Category Breakdown</h3>
+                            <div class="chart-container">
+                                <canvas id="${storeName.replace(/\s+/g, '-').toLowerCase()}-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            updateStoreData();
+        }
+
+        function updateStoreData() {
+            Object.keys(storeManagers).forEach(storeName => {
+                const storeData = expenseData.filter(entry => entry.store === storeName);
+const storeId = storeName.replace(/\s+/g, '-').toLowerCase();
+                
+                // Update store totals
+                const total = storeData.reduce((sum, entry) => sum + entry.amount, 0);
+                const count = storeData.length;
+                const pending = storeData.filter(entry => entry.status === 'Pending Upload').length;
+                
+                const totalElement = document.getElementById(storeId + '-total');
+                const countElement = document.getElementById(storeId + '-count');
+                const pendingElement = document.getElementById(storeId + '-pending');
+if (totalElement) totalElement.textContent = ⃁${total.toLocaleString('en-IN')};
+                if (countElement) countElement.textContent = count;
+                if (pendingElement) pendingElement.textContent = pending;
+                
+                // Update store entries table
+                const entriesTable = document.getElementById(storeId + '-entries');
+                if (entriesTable) {
+                    entriesTable.innerHTML = storeData.slice(-10).map(entry => `
+                        <tr class="border-b" style="border-left: 4px solid ${categoryColors[entry.category]}">
+                            <td class="px-4 py-3">${entry.date}</td>
+                            <td class="px-4 py-3">${entry.category}</td>
+<td class="px-4 py-3 font-semibold">₹${entry.amount.toLocaleString('en-IN')}</td>
+                            <td class="px-4 py-3">${entry.description}</td>
+                            <td class="px-4 py-3">
+                                <span class="text-sm ${getStatusClass(entry.status)}">${entry.status}</span>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+// Update store chart
+                updateStoreChart(storeId, storeData);
+            });
+        }
+
+        function updateStoreChart(storeId, storeData) {
+            const canvas = document.getElementById(storeId + '-chart');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            
+            // Calculate category totals for this store
+            const categoryTotals = {};
+            storeData.forEach(item => {
+                categoryTotals[item.category] = (categoryTotals[item.category] || 0) + item.amount;
+            });
+new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(categoryTotals),
+                    datasets: [{
+                        data: Object.values(categoryTotals),
+                        backgroundColor: Object.keys(categoryTotals).map(cat => categoryColors[cat])
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        }
+                    }
+                }
+            });
+        }
+function generateMonthlySummary() {
+            const month = document.getElementById('summary-month').value;
+            const year = document.getElementById('summary-year').value;
+            
+            // Filter data for selected month/year
+            const monthlyData = expenseData.filter(entry => {
+                const entryDate = new Date(entry.date);
+                return entryDate.getMonth() == month && entryDate.getFullYear() == year;
+            });
+            
+            // Generate summary table
+            const summaryBody = document.getElementById('monthly-summary-body');
+            const storeNames = Object.keys(storeManagers);
+summaryBody.innerHTML = storeNames.map(storeName => {
+                const storeData = monthlyData.filter(entry => entry.store === storeName);
+                
+                const categoryTotals = {
+                    'Raw Material Purchase': 0,
+                    'Smallware Purchase': 0,
+                    'Petrol': 0,
+                    'Office Stationery': 0,
+                    'Miscellaneous': 0
+                };
+                
+                storeData.forEach(entry => {
+                    categoryTotals[entry.category] += entry.amount;
+                });
+});
+                
+                const storeTotal = Object.values(categoryTotals).reduce((sum, amount) => sum + amount, 0);
+                const uploadedCount = storeData.filter(entry => entry.status === 'Uploaded' || entry.status === 'Verified').length;
+                const totalCount = storeData.length;
+                const compliance = totalCount > 0 ? Math.round((uploadedCount / totalCount) * 100) : 100;
+                
+                return `
+                    <tr class="border-b">
+                        <td class="border border-gray-300 px-4 py-3 font-semibold">${storeName}</td>
+                        <td class="border border-gray-300 px-4 py-3">₹${categoryTotals['Raw Material Purchase'].toLocaleString('en-IN')}</td>
+<td class="border border-gray-300 px-4 py-3">₹${categoryTotals['Raw Material Purchase'].toLocaleString('en-IN')}</td>
+                        <td class="border border-gray-300 px-4 py-3">⃁${categoryTotals['Smallware Purchase'].toLocaleString('en-IN')}</td>
+                        <td class="border border-gray-300 px-4 py-3">⃁${categoryTotals['Petrol'].toLocaleString('en-IN')}</td>
+                        <td class="border border-gray-300 px-4 py-3">⃁${categoryTotals['Office Stationery'].toLocaleString('en-IN')}</td>
+                        <td class="border border-gray-300 px-4 py-3">⃁${categoryTotals['Miscellaneous'].toLocaleString('en-IN')}</td>
+<td class="border border-gray-300 px-4 py-3 font-bold">⃁${storeTotal.toLocaleString('en-IN')}</td>
+                        <td class="border border-gray-300 px-4 py-3">
+                            <span class="font-semibold ${compliance >= 90 ? 'text-green-600' : compliance >= 70 ? 'text-yellow-600' : 'text-red-600'}">
+                                ${compliance}%
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+// Add totals row
+            const grandTotals = {
+                'Raw Material Purchase': 0,
+                'Smallware Purchase': 0,
+                'Petrol': 0,
+                'Office Stationery': 0,
+                'Miscellaneous': 0
+            };
+            
+            monthlyData.forEach(entry => {
+                grandTotals[entry.category] += entry.amount;
+            });
+            
+            const grandTotal = Object.values(grandTotals).reduce((sum, amount) => sum + amount, 0);
+            const totalUploaded = monthlyData.filter(entry => 
+entry.status === 'Uploaded' || entry.status === 'Verified').length;
+            const totalEntries = monthlyData.length;
+            const overallCompliance = totalEntries > 0 ? Math.round((totalUploaded / totalEntries) * 100) : 100;
+            
+            summaryBody.innerHTML += `
+                <tr class="bg-gray-100 font-bold">
+                    <td class="border border-gray-300 px-4 py-3">TOTAL</td>
+                    <td class="border border-gray-300 px-4 py-3">⃁${grandTotals['Raw Material Purchase'].toLocaleString('en-IN')}</td>
+                    <td class="border border-gray-300 px-4 py-3">⃁${grandTotals['Smallware Purchase'].toLocaleString('en-IN')}</td>
+<td class="border border-gray-300 px-4 py-3">⃁${grandTotals['Petrol'].toLocaleString('en-IN')}</td>
+                    <td class="border border-gray-300 px-4 py-3">⃁${grandTotals['Office Stationery'].toLocaleString('en-IN')}</td>
+                    <td class="border border-gray-300 px-4 py-3">⃁${grandTotals['Miscellaneous'].toLocaleString('en-IN')}</td>
+                    <td class="border border-gray-300 px-4 py-3 text-xl">⃁${grandTotal.toLocaleString('en-IN')}</td>
+                    <td class="border border-gray-300 px-4 py-3">
+                        <span class="${overallCompliance >= 90 ? 'text-green-600' : overallCompliance >= 70 ? 'text-yellow-600' : 'text-red-600'}">
+                            ${overallCompliance}%
+                        </span>
+                    </td>
+                </tr>
+            `;
+        }
+
+        function updateAllViews() {
+            updateDashboard();
+            renderEntriesTable();
+            updateStoreData();
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg text-white z-50 ${
+                type === 'success' ? 'bg-green-500' : 
+                 type === 'error' ? 'bg-red-500' : 
+                type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
+            }`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        function toggleDarkMode() {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('dark-mode', isDarkMode);
+            localStorage.setItem('Alliwan-dark-mode', isDarkMode);
+        }
+function exportToExcel() {
+            const workbook = XLSX.utils.book_new();
+            
+            // All Entries sheet
+            const allEntriesWS = XLSX.utils.json_to_sheet(expenseData.map(entry => ({
+                Date: entry.date,
+                Store: entry.store,
+                Manager: entry.manager,
+                Category: entry.category,
+                'Invoice Number': entry.invoice,
+                'Amount (⃁)': entry.amount,
+                Description: entry.description,
+                'Payment Mode': entry.payment,
+                'Invoice Status': entry.status,
+                'Invoice Link': entry.invoiceLink
+            })));
+            
+XLSX.utils.book_append_sheet(workbook, allEntriesWS, 'All Entries');
+            
+            // Store-wise sheets
+            Object.keys(storeManagers).forEach(storeName => {
+                const storeData = expenseData.filter(entry => entry.store === storeName);
+                const storeWS = XLSX.utils.json_to_sheet(storeData.map(entry => ({
+                    Date: entry.date,
+                    Category: entry.category,
+                    'Invoice Number': entry.invoice,
+                    'Amount (⃁)': entry.amount,
+                    Description: entry.description,
+                    'Payment Mode': entry.payment,
+                    'Invoice Status': entry.status
+                })));
+XLSX.utils.book_append_sheet(workbook, storeWS, storeName.replace(' QSR', ''));
+            });
+            
+            // Generate and download
+            const fileName = Alliwan_Petty_Cash_${new Date().toISOString().split('T')[0]}.xlsx;
+            XLSX.writeFile(workbook, fileName);
+            
+            showNotification('Excel file exported successfully!', 'success');
+        }
+
+        // Load dark mode preference
+        if (localStorage.getItem('qsr-dark-mode') === 'true') {
+            toggleDarkMode();
+        }
+    </script>
+</body>
+</html>
